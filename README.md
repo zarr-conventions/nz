@@ -1,4 +1,4 @@
-# NZUG-1.0 Convention Metadata
+# NZUG-1.0 NetCDF - Zarr Users Guide
 
 - **UUID**: d0a980b5-c644-4dcc-85a1-283799a58f40
 - **Name**: NZUG-1.0
@@ -38,7 +38,7 @@ All properties use standard attribute names (not namespaced) and are placed at t
 ## Motivation
 
 - **Interoperability layer gap**: Domain conventions for scientific array data (like CF) are written against a format specification that provides structural primitives — named dimensions, typed variables, typed attributes, named coordinate systems. The Zarr v3 specification defines a capable storage model but deliberately leaves these structural refinements to conventions. NZUG fills that gap.
-- **CF adoption without modification**: By providing NUG-equivalent structural concepts, NZUG allows CF to be applied to Zarr using a simple reference substitution (NUG → NZUG), without waiting for geospatial convention debates to resolve.
+- **Domain convention adoption**: By providing NUG-equivalent structural concepts, NZUG allows domain conventions written against the NUG — such as CF — to be applied to Zarr using a simple reference substitution (NUG → NZUG), without waiting for geospatial convention debates to resolve.
 - **Stable foundation for domain conventions**: GeoZarr, OME-NGFF, and related conventions can build on NZUG rather than independently re-solving the same structural problems.
 - **Implementation convergence**: Implementations can converge on shared structural behavior before domain-level semantics are fully standardized.
 
@@ -198,7 +198,7 @@ An array named `lat` with `"dimension_names": ["lat"]` and monotonically ordered
 
 ### Auxiliary Array
 
-An _auxiliary array_ is an array that provides coordinate or ancillary information for another array but does not satisfy the dimension coordinate definition above. How auxiliary arrays are associated with data arrays — including the attribute names and syntax used to declare those relationships — is left to domain conventions (e.g., CF's `coordinates` attribute). NZUG-1.0 defines the concept but does not reserve any attribute names for it.
+An _auxiliary array_ is an array that provides coordinate or ancillary information for another array but does not satisfy the dimension coordinate definition above. How auxiliary arrays are associated with data arrays — including the attribute names and syntax used to declare those relationships — is left to domain conventions (e.g., the `coordinates` attribute used by CF). NZUG-1.0 defines the concept but does not reserve any attribute names for it.
 
 ### Scalar Array
 
@@ -208,7 +208,7 @@ Scalar arrays are used as single-valued coordinate variables — for example, to
 
 ## Type System
 
-The NUG's typed attribute model is a load-bearing feature for domain conventions. CF's precision requirements for `scale_factor`, `add_offset`, and grid mapping CRS parameters depend on knowing whether an attribute value is `float32` or `float64`. Zarr v3's JSON attribute model does not provide this distinction. This section defines the NZUG-1.0 type system for attributes.
+The NUG's typed attribute model is a load-bearing feature for domain conventions. Precision requirements for numeric attributes — such as packing parameters and CRS coefficients — depend on knowing whether an attribute value is `float32` or `float64`. Zarr v3's JSON attribute model does not provide this distinction. This section defines the NZUG-1.0 type system for attributes.
 
 ### Array Data Types
 
@@ -288,7 +288,7 @@ This mechanism is directly interoperable with datasets produced by [netCDF-C's N
 
 When `_FillValue` is present in an array's attributes, convention-aware readers MUST treat values equal to `_FillValue` as missing data, regardless of the storage `fill_value`. When both are present and differ, `_FillValue` governs masking semantics. The type of `_FillValue` is determined by the `_nczarr_attr` type annotation if present, or defaults to the array's `data_type`.
 
-This decoupling is necessary because Zarr's storage `fill_value` serves a different purpose (chunk initialization) than CF's `_FillValue` (semantic masking). In netCDF, these happen to be the same mechanism; in Zarr, they are independent. NZUG preserves CF's masking semantics by defining `_FillValue` as an attribute with clear precedence over the storage-level field.
+This decoupling is necessary because Zarr's storage `fill_value` serves a different purpose (chunk initialization) than the semantic use of `_FillValue` for missing data masking. In netCDF, these happen to be the same mechanism; in Zarr, they are independent. NZUG preserves the NUG's masking semantics by defining `_FillValue` as an attribute with clear precedence over the storage-level field.
 
 ## Properties
 
@@ -326,7 +326,7 @@ Names of arrays, groups, and attributes in NZUG-1.0 datasets:
 - Are case-sensitive, but names that differ only by case SHOULD be avoided
 - MAY contain period (`.`) or hyphen (`-`), but these are discouraged in names intended to be referenced in attribute values
 
-These rules ensure that NZUG-1.0 names can be used unambiguously in CF attribute values (which reference array names as strings), in CDL text representations, and in URL path components.
+These rules ensure that NZUG-1.0 names can be used unambiguously in domain convention attribute values (which reference array names as strings), in CDL text representations, and in URL path components.
 
 ## Consolidated Metadata
 
@@ -338,11 +338,11 @@ Consolidated metadata in Zarr v3 is implemented by zarr-python and proposed for 
 
 A domain convention written against NZUG-1.0 has access to:
 
-- **Named, constrained dimensions.** The shared dimension constraint means that dimension labels within a group carry co-extent guarantees, enabling CF to define co-location of arrays using the same semantics as netCDF.
+- **Named, constrained dimensions.** The shared dimension constraint means that dimension labels within a group carry co-extent guarantees, enabling domain conventions to define co-location of arrays using the same semantics as netCDF.
 - **Dimension coordinates.** Identified structurally, without any additional attribute, exactly as coordinate variables are identified in the NUG.
-- **Typed attributes.** The `_nczarr_attr` type annotation mechanism (adopted from NCZarr) gives CF a way to express precision requirements for `scale_factor`, `add_offset`, and CRS parameters that would otherwise be lost in JSON serialization.
-- **Semantic fill values.** `_FillValue` decoupled from the storage `fill_value`, preserving CF's masking semantics independently of Zarr's chunk initialization behavior.
-- **Auxiliary arrays.** The auxiliary array concept is defined structurally, enabling domain conventions like CF to build their own coordinate association mechanisms (e.g., the `coordinates` attribute) on top of NZUG.
+- **Typed attributes.** The `_nczarr_attr` type annotation mechanism (adopted from NCZarr) gives domain conventions a way to express precision requirements for numeric attributes that would otherwise be lost in JSON serialization.
+- **Semantic fill values.** `_FillValue` decoupled from the storage `fill_value`, preserving the NUG's masking semantics independently of Zarr's chunk initialization behavior.
+- **Auxiliary arrays.** The auxiliary array concept is defined structurally, enabling domain conventions to build their own coordinate association mechanisms (e.g., the `coordinates` attribute) on top of NZUG.
 
 ### NUG to NZUG Mapping Table
 
@@ -370,9 +370,9 @@ The following topics are explicitly deferred to conventions built on NZUG-1.0. T
 
 **Axis order.** The relationship between the order of entries in `dimension_names` and the axis order expressed in a CRS definition is an open problem with known silent failure modes. NZUG-1.0 does not address it.
 
-**Coordinate role identification beyond dimension coordinates.** Whether an array is a latitude coordinate, a time coordinate, or a vertical coordinate is determined by CF standard names, units, and the `axis` attribute. NZUG-1.0 identifies only dimension coordinates structurally; all further coordinate semantics are left to CF.
+**Coordinate role identification beyond dimension coordinates.** Whether an array is a latitude coordinate, a time coordinate, or a vertical coordinate is determined by domain conventions through mechanisms such as standard names, units, and axis attributes. NZUG-1.0 identifies only dimension coordinates structurally; all further coordinate semantics are left to domain conventions.
 
-**Auxiliary coordinate association.** How auxiliary arrays are linked to data arrays (e.g., CF's `coordinates` attribute) is a domain convention concern. NZUG-1.0 defines the auxiliary array concept but does not reserve attribute names for declaring those relationships.
+**Auxiliary coordinate association.** How auxiliary arrays are linked to data arrays (e.g., the `coordinates` attribute) is a domain convention concern. NZUG-1.0 defines the auxiliary array concept but does not reserve attribute names for declaring those relationships.
 
 **Data description attributes.** Attribute names for units, long names, valid ranges, packing parameters (scale_factor, add_offset), and similar descriptive metadata are defined by domain conventions such as CF, not by NZUG-1.0.
 
