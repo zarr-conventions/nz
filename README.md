@@ -60,11 +60,15 @@ NZUG-1.0 is explicitly scoped to the structural interoperability layer. The foll
 
 NZUG-1.0 adds normative constraints and definitions above the Zarr v3 specification. It does not modify or contradict the Zarr v3 spec. Every valid NZUG-1.0 dataset is a valid Zarr v3 dataset. Implementations that support Zarr v3 can read NZUG-1.0 datasets; they will simply not enforce the additional constraints defined here.
 
+### Relationship to Zarr v2
+
+NZUG-1.0 is defined against Zarr v3, but its structural concepts have direct analogues in Zarr v2 datasets. Many v2 datasets already follow the patterns NZUG formalizes: xarray writes dimension names via the `_ARRAY_DIMENSIONS` attribute in `.zattrs`, NCZarr writes attribute type annotations via `_nczarr_attr` in `.zattrs`, and `_FillValue` and `conventions` are widely used. A Zarr v2 dataset that follows these existing practices is structurally equivalent to a NZUG-1.0 dataset, differing only in the metadata container (`.zattrs` / `.zarray` vs unified `zarr.json`) and the dimension name mechanism (`_ARRAY_DIMENSIONS` attribute vs `dimension_names` field). NZUG-1.0 does not define a v2 profile, but implementations that support both format versions MAY apply NZUG-1.0 structural semantics to v2 datasets that use these established patterns.
+
 ### Relationship to Domain Conventions
 
-A domain convention is a document that specifies scientific semantics for datasets built on a structural interoperability layer. The CF Metadata Conventions are the primary domain convention this document is designed to support. NZUG-1.0 provides to a CF-Zarr profile exactly what the NUG provides to CF-netCDF.
+A domain convention is a document that specifies semantics for datasets built on a structural interoperability layer. The CF Metadata Conventions are the primary domain convention this document is designed to support. NZUG-1.0 provides to a CF-Zarr profile exactly what the NUG provides to CF-netCDF.
 
-Domain conventions built on NZUG-1.0 MUST declare compliance using the `conventions` attribute defined in [Convention Declaration](#convention-declaration). They MAY add constraints above NZUG-1.0 but MUST NOT contradict it.
+Domain conventions built on NZUG-1.0 MUST declare compliance using the `conventions` attribute defined in [Convention Declaration](#convention-declaration). They MAY add constraints above NZUG-1.0 but MUST NOT contradict it. For backward compatibility, software that supports NetCDF in Zarr are encouraged to try to support data that do not declare compliance with NZUG conventions but do adhere to its assumptions.
 
 The ordering is: Zarr v3 spec → NZUG-1.0 → domain conventions (CF, GeoZarr, etc.).
 
@@ -198,7 +202,9 @@ An _auxiliary array_ is an array that provides coordinate or ancillary informati
 
 ### Scalar Array
 
-**\[NZUG addition\]** A _scalar array_ is an array with `"shape": []`. NZUG-1.0 requires implementations to support scalar arrays. Its `dimension_names` MUST be an empty array `[]`. Scalar arrays are used to attach single-valued metadata as typed array values rather than attributes, preserving type information that the JSON attribute system cannot express.
+**\[NZUG addition\]** A _scalar array_ is an array that holds exactly one value. It is encoded in Zarr v3 with `"shape": []` (no dimensions) and `"dimension_names": []`. Despite having no dimensions, a scalar array contains a single typed data value in its chunk store. NZUG-1.0 requires implementations to support scalar arrays.
+
+Scalar arrays are used as single-valued coordinate variables — for example, to represent a single pressure level or forecast time without introducing a size-one dimension. They are not a substitute for attributes: a scalar array is a first-class array node with a declared `data_type` and coordinate semantics, not JSON metadata. A naive Zarr v3 reader will read scalar arrays without error.
 
 ## Type System
 
@@ -253,32 +259,24 @@ The `_nczarr_attr` attribute is a JSON object containing a single key `"types"`,
 }
 ```
 
-Type identifiers may use either of two formats:
+Type identifiers MUST use **Zarr v3 data type names**: `bool`, `int8`, `uint8`, `int16`, `uint16`, `int32`, `uint32`, `int64`, `uint64`, `float32`, `float64`, `complex64`, `complex128`.
 
-1. **Zarr v3 data type names** as defined in the [Zarr v3 specification](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html): `bool`, `int8`, `uint8`, `int16`, `uint16`, `int32`, `uint32`, `int64`, `uint64`, `float32`, `float64`, `complex64`, `complex128`. Writers SHOULD use Zarr v3 data type names.
-2. **NumPy dtype notation** ([reference](https://numpy.org/doc/stable/reference/arrays.dtypes.html)), consistent with NCZarr: `[endian][kind][size]` where endian is `<` (little-endian), `>` (big-endian), or `|` (not applicable); kind is `i` (signed integer), `u` (unsigned integer), `f` (float), or `S` (string); and size is the byte count. Writers MAY use NumPy dtype notation for interoperability with NCZarr.
+The following table shows the correspondence between Zarr v3 type names and NC types:
 
-The following table shows the correspondence between all three notations:
+| Zarr v3 type | NC type     |
+| ------------ | ----------- |
+| `int8`       | `NC_BYTE`   |
+| `uint8`      | `NC_UBYTE`  |
+| `int16`      | `NC_SHORT`  |
+| `uint16`     | `NC_USHORT` |
+| `int32`      | `NC_INT`    |
+| `uint32`     | `NC_UINT`   |
+| `int64`      | `NC_INT64`  |
+| `uint64`     | `NC_UINT64` |
+| `float32`    | `NC_FLOAT`  |
+| `float64`    | `NC_DOUBLE` |
 
-| NumPy dtype (LE) | Zarr v3 type   | NC type     |
-| ---------------- | -------------- | ----------- |
-| `<i1`            | `int8`         | `NC_BYTE`   |
-| `<u1`            | `uint8`        | `NC_UBYTE`  |
-| `<i2`            | `int16`        | `NC_SHORT`  |
-| `<u2`            | `uint16`       | `NC_USHORT` |
-| `<i4`            | `int32`        | `NC_INT`    |
-| `<u4`            | `uint32`       | `NC_UINT`   |
-| `<i8`            | `int64`        | `NC_INT64`  |
-| `<u8`            | `uint64`       | `NC_UINT64` |
-| `<f4`            | `float32`      | `NC_FLOAT`  |
-| `<f8`            | `float64`      | `NC_DOUBLE` |
-| `>S1`            | _(no equiv.)_  | `NC_CHAR`   |
-| `\|Sn`           | _(no equiv.)_  | `NC_STRING` |
-| _(no equiv.)_    | `bool`         | —           |
-| _(no equiv.)_    | `complex64`    | —           |
-| _(no equiv.)_    | `complex128`   | —           |
-
-Readers MUST accept both notations. When reading NumPy dtype notation, readers MUST accept both little-endian (`<`) and big-endian (`>`) prefixes. The endian prefix indicates the type's byte width, not the storage endianness of attribute values (which are JSON).
+> **Interoperability note:** Datasets produced by [NCZarr](https://docs.unidata.ucar.edu/netcdf-c/current/nczarr_head.html) (netCDF-C's Zarr backend) use [NumPy dtype notation](https://numpy.org/doc/stable/reference/arrays.dtypes.html) (e.g., `<f4` for `float32`) in `_nczarr_attr` type values. NumPy dtype strings are not part of the NZUG-1.0 specification, but implementations are encouraged to recognize them without error to support interoperability with NCZarr-produced datasets.
 
 The `_nczarr_attr` object need not annotate every attribute — only those whose default JSON type is insufficient. Unannotated numeric attributes are interpreted at their JSON default type per [Attribute Value Types](#attribute-value-types). The `_nczarr_attr` attribute is reserved by NZUG-1.0 and MUST NOT be used for other purposes. Implementations SHOULD suppress `_nczarr_attr` from user-visible attribute listings.
 
@@ -395,7 +393,7 @@ A NZUG-1.0 compliant dataset:
 3. Has fully populated `dimension_names` (no `null` or empty-string entries) in every array `zarr.json`.
 4. Satisfies the shared dimension constraint: within any group, all arrays sharing a dimension label have the same length along that axis.
 5. Uses `_FillValue` in array attributes (when present) as the semantic missing data indicator, distinct from the storage `fill_value`.
-6. Uses `_nczarr_attr` in array attributes (when present) to annotate numeric attribute precision using NumPy dtype notation or Zarr v3 data type names.
+6. Uses `_nczarr_attr` in array attributes (when present) to annotate numeric attribute precision using Zarr v3 data type names.
 7. Uses reserved attribute names only as defined in [Properties](#properties).
 8. Uses array and group names conforming to [Naming Rules](#naming-rules).
 
@@ -416,7 +414,7 @@ A NZUG-1.0 compliant dataset:
 | ----------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
 | Dimension definition    | Declared, named, and sized; shared by structural reference in file | Label in `dimension_names`; co-extent enforced by shared dimension constraint                    |
 | Coordinate variable     | 1D variable whose name matches a dimension name                    | Array whose `dimension_names` entry matches its own name and whose values are strictly monotonic |
-| Attribute type          | Declared NC type (`NC_FLOAT`, `NC_DOUBLE`, etc.)                   | JSON type + optional `_nczarr_attr` type annotation (NumPy dtype or Zarr v3 data type name)      |
+| Attribute type          | Declared NC type (`NC_FLOAT`, `NC_DOUBLE`, etc.)                   | JSON type + optional `_nczarr_attr` type annotation (Zarr v3 data type name)                     |
 | `Conventions` attribute | Root-level string, capital C                                       | `conventions` root group attribute; `Conventions` treated as equivalent during reading           |
 | Unlimited dimension     | Supported                                                          | Not defined (out of scope)                                                                       |
 | User-defined types      | Supported in netCDF-4                                              | Not defined (out of scope)                                                                       |

@@ -90,43 +90,34 @@
       ],
       "additionalProperties": false
     },
-    "dtypeString": {
+    "zarrDataType": {
       "type": "string",
-      "description": "Type identifier: either a NumPy dtype string ([endian][kind][size], e.g. '<f4') or a Zarr v3 data type name (e.g. 'float32')",
-      "anyOf": [
-        {
-          "pattern": "^[<>|][iufS][0-9]+$",
-          "description": "NumPy dtype string"
-        },
-        {
-          "enum": [
-            "bool",
-            "int8",
-            "uint8",
-            "int16",
-            "uint16",
-            "int32",
-            "uint32",
-            "int64",
-            "uint64",
-            "float32",
-            "float64",
-            "complex64",
-            "complex128"
-          ],
-          "description": "Zarr v3 data type name"
-        }
+      "description": "Zarr v3 data type name",
+      "enum": [
+        "bool",
+        "int8",
+        "uint8",
+        "int16",
+        "uint16",
+        "int32",
+        "uint32",
+        "int64",
+        "uint64",
+        "float32",
+        "float64",
+        "complex64",
+        "complex128"
       ]
     },
     "nczarrAttr": {
       "type": "object",
-      "description": "The _nczarr_attr attribute: NCZarr-compatible attribute type annotations",
+      "description": "The _nczarr_attr attribute: attribute type annotations using Zarr v3 data type names",
       "properties": {
         "types": {
           "type": "object",
-          "description": "Maps attribute names to type identifier strings (NumPy dtype or Zarr v3 data type)",
+          "description": "Maps attribute names to Zarr v3 data type names",
           "additionalProperties": {
-            "$ref": "#/$defs/dtypeString"
+            "$ref": "#/$defs/zarrDataType"
           }
         }
       },
