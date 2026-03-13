@@ -113,6 +113,14 @@ the array's `data_type`. The `_nczarr_attr` pattern (from NCZarr) was considered
 stated goals, and leaves attribute-precision decisions to domain conventions that understand
 the semantics. Domain conventions MAY define their own annotation systems if precision matters.
 
+### scale_factor / add_offset — codec vs. attribute encoding
+
+CF requires typed `scale_factor` and `add_offset` attributes for data packing. JSON attributes in Zarr lack numeric type precision, creating an interoperability gap (see [nz#2](https://github.com/zarr-conventions/nz/issues/2)).
+
+The decision: prefer the Zarr v3 codec pipeline for scale-offset transformations. A `scale-offset` codec extension is under development ([zarr-extensions #43](https://github.com/zarr-developers/zarr-extensions/pull/43)) that provides typed configuration for scale and offset parameters. Readers encountering attribute-based `scale_factor`/`add_offset` declarations should map them to the equivalent codec behavior at decode time.
+
+This is informative guidance in NZ, not normative, because `scale_factor` and `add_offset` are domain convention attributes (defined by CF, not NZ). NZ includes the guidance in its "Out of Scope" section to direct implementers toward the codec-based approach.
+
 ### Separation of concerns — what is explicitly out of scope
 
 This scoping is load-bearing. NZ does not take positions on:

@@ -325,6 +325,8 @@ The following topics are explicitly deferred to conventions built on NZ. They ar
 
 **Data description attributes.** Attribute names for units, long names, valid ranges, packing parameters (scale_factor, add_offset), and similar descriptive metadata are defined by domain conventions such as CF, not by NZ.
 
+> **Packing:** A `scale-offset` codec extension is under development ([zarr-extensions #43](https://github.com/zarr-developers/zarr-extensions/pull/43)) that performs scale-offset transformations in the Zarr v3 codec pipeline with typed configuration. Writers SHOULD prefer this codec over `scale_factor`/`add_offset` attributes when it is available. Readers encountering `scale_factor` and `add_offset` attributes on arrays without an equivalent codec SHOULD apply the transformation at decode time by inserting the equivalent codec into the pipeline. Domain conventions that define `scale_factor`/`add_offset` semantics remain authoritative.
+
 **Unlimited dimensions.** The NUG supports unlimited dimensions for record-oriented appending. Zarr has no equivalent concept. NZ does not define one.
 
 **User-defined types.** Enumerated, opaque, variable-length, and compound types from the netCDF-4 enhanced data model have no Zarr v3 equivalents. NZ does not address them.
