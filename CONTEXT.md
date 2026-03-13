@@ -70,7 +70,7 @@ remains readable; only interpretation is affected.
 | `dimension_names` required      | Every array MUST have fully populated `dimension_names` (no null/empty entries)                                                | ✅ Producer constraint only                                |
 | Shared dimension constraint     | Within a group, arrays sharing a dimension label MUST have the same length along that axis                                     | ✅ Producer constraint only                                |
 | Dimension coordinate definition | Structural identification: 1D array whose `dimension_names` entry matches its own name and whose values are strictly monotonic | ✅ Interpretive only                                       |
-| `_type` annotation              | JSON object in `attributes` mapping attribute names to explicit NZarr type identifiers                                         | ✅ Ignoring causes silent precision loss, not read failure |
+| `_nczarr_attr` annotation       | JSON object in `attributes` with a `"types"` key mapping attribute names to Zarr v3 type identifiers; adopted from NCZarr     | ✅ Ignoring causes silent precision loss, not read failure |
 | `_FillValue` semantics          | Semantic missing data indicator, decoupled from storage `fill_value`                                                           | ✅ Ignoring means no masking, not a read failure           |
 | Reserved attribute names        | Root group and array attribute names reserved with defined semantics                                                           | ✅ Seen as opaque key-value pairs by naive readers         |
 
@@ -92,9 +92,9 @@ collisions. NZ uses flat unprefixed attributes by design, for two reasons:
    namespacing guidance targets. The analogy: `zarr_format` and `node_type` are also
    unprefixed structural fields.
 
-**Exception flagged:** `_type` is novel (no existing ecosystem precedent) and could
-reasonably take a prefix (e.g., `nz:type`) without breaking anything. This remains open
-for community input.
+**Note:** `_nczarr_attr` is adopted from NCZarr (netCDF-C's Zarr backend), which uses the
+same `_nczarr_attr` / `types` structure in Zarr v2 `.zattrs`. Using this established pattern
+avoids a novel reserved name and provides direct interoperability with NCZarr-produced datasets.
 
 ### Separation of concerns — what is explicitly out of scope
 
@@ -135,7 +135,7 @@ these substitutions; the CF spec itself is unchanged.
 | coordinate variable                | dimension coordinate (1D array, `dimension_names` matches own name, monotonic) |
 | global attribute                   | root group attribute                                                           |
 | variable attribute                 | array attribute                                                                |
-| typed attribute (`NC_FLOAT`, etc.) | attribute + optional `_type` annotation                                        |
+| typed attribute (`NC_FLOAT`, etc.) | attribute + optional `_nczarr_attr` type annotation                            |
 | `_FillValue` variable attribute    | `_FillValue` array attribute                                                   |
 | `Conventions` global attribute     | `conventions` root group attribute                                             |
 
@@ -146,8 +146,6 @@ these substitutions; the CF spec itself is unchanged.
 - **Convention name:** `NZ-1.0` vs `NZUG-1.0` vs `NZarr-1.0` vs something else. The zarr-conventions-spec
   uses UUID as primary identifier so the string name matters less for machine identification,
   but matters for human legibility and citation.
-- **`_type` namespacing:** Should `_type` take a prefix (`nz:type`) given it is novel and
-  has no legacy tooling to break?
 - **Scalar arrays:** Soften to SHOULD or drop from normative content entirely and move to
   informative?
 - **Repository home:** zarr-conventions org is the natural home. Requires someone with org
