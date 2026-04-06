@@ -232,6 +232,12 @@ Default type mapping from JSON attribute values to NZ types:
 
 Homogeneity is required within JSON arrays used as attribute values. A JSON array containing mixed numeric and string values is not a valid NZ attribute value.
 
+> **Float64 attribute serialization:** Zarr v3 attributes are encoded as JSON, which represents numeric values as decimal strings. For `float64` attribute values, the decimal representation must carry sufficient precision to recover the original binary value exactly on read. IEEE 754 double-precision values require at least 17 significant decimal digits to guarantee exact round-trip; fewer digits may introduce ULP-level drift.
+>
+> Implementations writing `float64` attributes — including CF grid mapping parameters (`semi_major_axis`, `inverse_flattening`, `standard_parallel`, and similar), `_FillValue` on `float64` variables, and any other double-typed values — SHOULD serialize with at least 17 significant decimal digits. Python's `json.dumps` and zarr-python produce conforming output by default via David Gay's algorithm; implementers in other languages should verify their JSON encoder's float precision.
+>
+> This guidance applies to serialization only. Readers interpret JSON numbers according to the type inherited from the variable's `data_type` or from the CF construct's definition.
+
 ### The `_FillValue` Attribute
 
 **\[NZ addition\]** The attribute name `_FillValue` is reserved as the _semantic missing data indicator_. It is distinct from the storage-level `fill_value` field in `zarr.json`, which specifies the value used to initialize unwritten chunks.
