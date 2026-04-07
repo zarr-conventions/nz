@@ -34,6 +34,27 @@ All properties use standard attribute names (not namespaced) and are placed at t
   - [Root group with CF-1.12](examples/root_group_cf.json)
   - [Dimension coordinate](examples/dimension_coordinate.json)
 
+## Contents
+
+- [Description](#description) — What NZ is and the role it plays between Zarr v3 and domain conventions like CF.
+- [Motivation](#motivation) — Why a structural interoperability layer is needed, and how NZ relates to Zarr v3, Zarr v2, and domain conventions.
+- [Convention Registration](#convention-registration) — The `zarr_conventions` registry entry for NZ-1.0.
+- [Applicable To](#applicable-to) — Which Zarr hierarchy node types (Group, Array) the convention applies to.
+- [Convention Declaration](#convention-declaration) — How a dataset declares NZ compliance via the `conventions` attribute.
+- [Data Model](#data-model) — Structural concepts (store, hierarchy, node, group, array, dimension, dimension coordinate, auxiliary array, scalar array).
+- [Type System](#type-system) — Required array data types, JSON-to-NZ attribute type mapping, and `_FillValue` semantics.
+- [Properties](#properties) — Reserved attribute names and structural requirements for root groups and arrays.
+- [Naming Rules](#naming-rules) — Allowed characters and conventions for array, group, and attribute names.
+- [Consolidated Metadata](#consolidated-metadata) — Recommendation to use consolidated metadata and consistency requirements.
+- [Codec Interoperability (Informative)](#codec-interoperability-informative) — Recommended baseline and broadly supported Zarr v3 codecs for cross-implementation reading.
+- [What This Convention Enables (Informative)](#what-this-convention-enables-informative) — Capabilities NZ provides to domain conventions, with a NUG-to-NZ mapping table.
+- [Out of Scope (Informative)](#out-of-scope-informative) — Topics deliberately deferred to domain conventions (CRS, axis order, packing, unlimited dimensions, etc.).
+- [Normative Summary](#normative-summary) — Concise checklist of all NZ-1.0 conformance requirements.
+- [Appendix A: Differences from the Zarr v3 Specification](#appendix-a-differences-from-the-zarr-v3-specification) — Table of constraints NZ adds above Zarr v3.
+- [Appendix B: Differences from the NetCDF Users Guide](#appendix-b-differences-from-the-netcdf-users-guide) — Table comparing NUG concepts to their NZ equivalents.
+- [Known Implementations](#known-implementations) — Current implementation status, compatible tools, and resources.
+- [Acknowledgements](#acknowledgements) — Template lineage and development credits.
+
 ## Motivation
 
 - **Interoperability layer gap**: Domain conventions for scientific array data (like CF) are written against a format specification that provides structural primitives — named dimensions, typed variables, typed attributes, named coordinate systems. The Zarr v3 specification defines a capable storage model but deliberately leaves these structural refinements to conventions. NZ fills that gap.

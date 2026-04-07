@@ -146,6 +146,32 @@ NZ RECOMMENDS (not requires) consolidated metadata for object storage datasets, 
 the zarr-python convention (stored under `consolidated_metadata` in root `zarr.json`).
 Will be upgraded to MUST when zarr-specs #309 is finalized.
 
+### Required core data types (resolves #6)
+
+NZ MUST-supports the twelve Zarr v3 core numeric/boolean types (`bool`, `int8`–`uint64`,
+`float32`/`float64`, `complex64`/`complex128`); same set governs `_FillValue` typing.
+zarr-extensions types (`string`, `bfloat16`, structured) MAY be supported, opt-in for
+both sides. String-valued *array* data is a SHOULD on the `string` extension (not MUST,
+since it is still an extension); string *attributes* are unaffected. Aligns with xarray's
+Zarr v3 output; follows the NUG analogy of structural-types-in-scope, encoding-out.
+
+### Codec interoperability — informative annex (resolves #5)
+
+Codec pipeline is informative, not normative — same stance the NUG takes toward HDF5
+filters. Recommended baseline: `bytes` + `zstd` + `sharding_indexed` (zarr-python default,
+also implemented by zarr-js and zarrs). Broadly supported list adds `gzip` and `blosc`.
+Sharding is treated as first-class (structurally part of the chunk grid, not just a
+compressor). Lossy/domain-specific/experimental codecs are out of scope; a future revision
+or downstream convention MAY define a normatively constrained profile.
+
+### Spec navigation
+
+The README includes a `## Contents` table of contents placed after the front-matter
+examples list and before the Motivation section. Each entry is a markdown link to a
+top-level (`##`) section with a one-line annotation. The TOC is intended as a reader
+aid for the spec, which is long enough to be hard to navigate at a glance; it is not
+normative and should be kept in sync when major sections are added, removed, or renamed.
+
 ---
 
 ## The NUG → NZ Substitution Table
