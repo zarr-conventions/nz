@@ -43,7 +43,8 @@ spec. No changes to CF are required.
 
 ### Convention name and declaration
 
-- Convention identifier is **`NZ-1.0`** (previously explored as `NZarr-1.0` and `NZUG-1.0`; name still subject to community input but the identifier format is settled).
+- Convention identifier is **`NZ-1.0`** (previously explored as `NZarr-1.0` and `NZUG-1.0`; settled).
+- UUID: `d0a980b5-c644-4dcc-85a1-283799a58f40`. Repository home: `zarr-conventions/nz`.
 - Declaration via `"conventions": "NZ-1.0"` in root group `attributes`. Space-separated
   for multi-convention datasets: `"conventions": "NZ-1.0 CF-1.12"`.
 - `Conventions` (capital C, NUG legacy) treated as equivalent to `conventions` during reading.
@@ -145,6 +146,32 @@ NZ RECOMMENDS (not requires) consolidated metadata for object storage datasets, 
 the zarr-python convention (stored under `consolidated_metadata` in root `zarr.json`).
 Will be upgraded to MUST when zarr-specs #309 is finalized.
 
+### Required core data types (resolves #6)
+
+NZ MUST-supports the twelve Zarr v3 core numeric/boolean types (`bool`, `int8`–`uint64`,
+`float32`/`float64`, `complex64`/`complex128`); same set governs `_FillValue` typing.
+zarr-extensions types (`string`, `bfloat16`, structured) MAY be supported, opt-in for
+both sides. String-valued *array* data is a SHOULD on the `string` extension (not MUST,
+since it is still an extension); string *attributes* are unaffected. Aligns with xarray's
+Zarr v3 output; follows the NUG analogy of structural-types-in-scope, encoding-out.
+
+### Codec interoperability — informative annex (resolves #5)
+
+Codec pipeline is informative, not normative — same stance the NUG takes toward HDF5
+filters. Recommended baseline: `bytes` + `zstd` + `sharding_indexed` (zarr-python default,
+also implemented by zarr-js and zarrs). Broadly supported list adds `gzip` and `blosc`.
+Sharding is treated as first-class (structurally part of the chunk grid, not just a
+compressor). Lossy/domain-specific/experimental codecs are out of scope; a future revision
+or downstream convention MAY define a normatively constrained profile.
+
+### Spec navigation
+
+The README includes a `## Contents` table of contents placed after the front-matter
+examples list and before the Motivation section. Each entry is a markdown link to a
+top-level (`##`) section with a one-line annotation. The TOC is intended as a reader
+aid for the spec, which is long enough to be hard to navigate at a glance; it is not
+normative and should be kept in sync when major sections are added, removed, or renamed.
+
 ---
 
 ## The NUG → NZ Substitution Table
@@ -168,18 +195,21 @@ these substitutions; the CF spec itself is unchanged.
 
 ## Open Questions
 
-- **Convention name:** `NZ-1.0` vs `NZUG-1.0` vs `NZarr-1.0` vs something else. The zarr-conventions-spec
-  uses UUID as primary identifier so the string name matters less for machine identification,
-  but matters for human legibility and citation.
 - **Scalar arrays:** The MUST on reader support is appropriate (scalar arrays are valid Zarr
   v3, not an NZ addition). The remaining question is whether the informative motivation text
   (use as single-valued coordinate variables) is sufficient, or whether the normative section
   should be more explicit about what "support" means for producers vs. readers.
-- **Repository home:** zarr-conventions org is the natural home. Requires someone with org
-  access to create the repo (USGS GitHub policy prevents creating repos under personal or
-  org accounts for this work).
-- **UUID registration:** A UUID and `schema_url` are needed for the zarr-conventions-spec
-  CMO. These are assigned at registration time.
+
+---
+
+## Float64 attribute serialization
+
+JSON represents numeric values as decimal strings. For `float64` attribute values, at least
+17 significant decimal digits are needed for exact IEEE 754 round-trip. The spec includes
+informative guidance (added in 0df9949, fixing #2) that implementations writing `float64`
+attributes — including CF grid mapping parameters and `_FillValue` on `float64` arrays —
+SHOULD serialize with sufficient precision. Python's `json.dumps` and zarr-python conform
+by default; other languages should verify their JSON encoder's float precision.
 
 ---
 
@@ -189,4 +219,6 @@ NCZarr is Unidata's implementation of netCDF-C on top of Zarr. It solves some of
 problems (shared dimensions via `.nczgroup`, coordinate variables) but is tied to the
 netCDF-C library and its `.nczarr` metadata extensions. NZ is not NCZarr: it is a
 community convention that any implementation can adopt, defined wholly on top of the Zarr
-v3 spec without netCDF-C library dependencies.
+v3 spec without netCDF-C library dependencies. NCZarr's `_nczarr_attr` type annotation
+pattern was considered and rejected for NZ (see issues #2 and #3); NCZarr uses compatible
+dimension-naming and fill-value patterns but the attribute typing mechanism is not adopted.

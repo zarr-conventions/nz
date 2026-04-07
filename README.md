@@ -10,7 +10,7 @@
 
 ## Description
 
-NZ-1.0 (NetCDF Zarr convention) is a Zarr convention that defines a structural interoperability layer for array-oriented scientific data on top of the [Zarr v3 specification](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html). It serves the same structural role for the Zarr ecosystem that the [NetCDF Users Guide (NUG)](https://docs.unidata.ucar.edu/nug/current/) serves for netCDF: it defines a shared vocabulary of structural concepts, a typed data model, naming rules, and a small set of reserved attributes that domain conventions can be written against without modification.
+NZ (NetCDF Zarr convention) is a Zarr convention that defines a structural interoperability layer for array-oriented scientific data on top of the [Zarr v3 specification](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html). It serves the same structural role for the Zarr ecosystem that the [NetCDF Users Guide (NUG)](https://docs.unidata.ucar.edu/nug/current/) serves for netCDF: it defines a shared vocabulary of structural concepts, a typed data model, naming rules, and a small set of reserved attributes that domain conventions can be written against without modification.
 
 The primary design goal is to allow existing domain conventions — in particular the [CF Metadata Conventions](https://cfconventions.org/) — to be applied to Zarr v3 datasets by replacing the NUG as the underlying structural reference, **with no changes required to the domain convention itself.**
 
@@ -33,6 +33,27 @@ All properties use standard attribute names (not namespaced) and are placed at t
   - [Array with \_FillValue](examples/array_fillvalue.json)
   - [Root group with CF-1.12](examples/root_group_cf.json)
   - [Dimension coordinate](examples/dimension_coordinate.json)
+
+## Contents
+
+- [Description](#description) — What NZ is and the role it plays between Zarr v3 and domain conventions like CF.
+- [Motivation](#motivation) — Why a structural interoperability layer is needed, and how NZ relates to Zarr v3, Zarr v2, and domain conventions.
+- [Convention Registration](#convention-registration) — The `zarr_conventions` registry entry for NZ-1.0.
+- [Applicable To](#applicable-to) — Which Zarr hierarchy node types (Group, Array) the convention applies to.
+- [Convention Declaration](#convention-declaration) — How a dataset declares NZ compliance via the `conventions` attribute.
+- [Data Model](#data-model) — Structural concepts (store, hierarchy, node, group, array, dimension, dimension coordinate, auxiliary array, scalar array).
+- [Type System](#type-system) — Required array data types, JSON-to-NZ attribute type mapping, and `_FillValue` semantics.
+- [Properties](#properties) — Reserved attribute names and structural requirements for root groups and arrays.
+- [Naming Rules](#naming-rules) — Allowed characters and conventions for array, group, and attribute names.
+- [Consolidated Metadata](#consolidated-metadata) — Recommendation to use consolidated metadata and consistency requirements.
+- [Codec Interoperability (Informative)](#codec-interoperability-informative) — Recommended baseline and broadly supported Zarr v3 codecs for cross-implementation reading.
+- [What This Convention Enables (Informative)](#what-this-convention-enables-informative) — Capabilities NZ provides to domain conventions, with a NUG-to-NZ mapping table.
+- [Out of Scope (Informative)](#out-of-scope-informative) — Topics deliberately deferred to domain conventions (CRS, axis order, packing, unlimited dimensions, etc.).
+- [Normative Summary](#normative-summary) — Concise checklist of all NZ-1.0 conformance requirements.
+- [Appendix A: Differences from the Zarr v3 Specification](#appendix-a-differences-from-the-zarr-v3-specification) — Table of constraints NZ adds above Zarr v3.
+- [Appendix B: Differences from the NetCDF Users Guide](#appendix-b-differences-from-the-netcdf-users-guide) — Table comparing NUG concepts to their NZ equivalents.
+- [Known Implementations](#known-implementations) — Current implementation status, compatible tools, and resources.
+- [Acknowledgements](#acknowledgements) — Template lineage and development credits.
 
 ## Motivation
 
@@ -57,19 +78,19 @@ NZ is explicitly scoped to the structural interoperability layer. The following 
 
 ### Relationship to the Zarr v3 Specification
 
-NZ adds normative constraints and definitions above the Zarr v3 specification. It does not modify or contradict the Zarr v3 spec. Every valid NZ-1.0 dataset is a valid Zarr v3 dataset. Implementations that support Zarr v3 can read NZ-1.0 datasets; they will simply not enforce the additional constraints defined here.
+NZ adds normative constraints and definitions above the Zarr v3 specification. It does not modify or contradict the Zarr v3 spec. Every valid NZ dataset is a valid Zarr v3 dataset. Implementations that support Zarr v3 can read NZ datasets; they will simply not enforce the additional constraints defined here.
 
 ### Relationship to Zarr v2
 
-NZ is defined against Zarr v3, but its structural concepts have direct analogues in Zarr v2 datasets. Many v2 datasets already follow the patterns NZ formalizes: xarray writes dimension names via the `_ARRAY_DIMENSIONS` attribute in `.zattrs`, and `_FillValue` and `conventions` are widely used. A Zarr v2 dataset that follows these existing practices is structurally equivalent to a NZ-1.0 dataset, differing only in the metadata container (`.zattrs` / `.zarray` vs unified `zarr.json`) and the dimension name mechanism (`_ARRAY_DIMENSIONS` attribute vs `dimension_names` field). NZ does not define a v2 profile, but implementations that support both format versions MAY apply NZ structural semantics to v2 datasets that use these established patterns.
+NZ is defined against Zarr v3, but its structural concepts have direct analogues in Zarr v2 datasets. Many v2 datasets already follow the patterns NZ formalizes: xarray writes dimension names via the `_ARRAY_DIMENSIONS` attribute in `.zattrs`, and `_FillValue` and `conventions` are widely used. A Zarr v2 dataset that follows these existing practices is structurally equivalent to an NZ dataset, differing only in the metadata container (`.zattrs` / `.zarray` vs unified `zarr.json`) and the dimension name mechanism (`_ARRAY_DIMENSIONS` attribute vs `dimension_names` field). NZ does not define a v2 profile, but implementations that support both format versions MAY apply NZ structural semantics to v2 datasets that use these established patterns.
 
 ### Relationship to Domain Conventions
 
 A domain convention is a document that specifies semantics for datasets built on a structural interoperability layer. The CF Metadata Conventions are the primary domain convention this document is designed to support. NZ provides to a CF-Zarr profile exactly what the NUG provides to CF-netCDF.
 
-Domain conventions built on NZ-1.0 MUST declare compliance using the `conventions` attribute defined in [Convention Declaration](#convention-declaration). They MAY add constraints above NZ-1.0 but MUST NOT contradict it. For backward compatibility, software that supports NetCDF in Zarr are encouraged to try to support data that do not declare compliance with NZ conventions but do adhere to its assumptions.
+Domain conventions built on NZ MUST declare compliance using the `conventions` attribute defined in [Convention Declaration](#convention-declaration). They MAY add constraints above NZ but MUST NOT contradict it. For backward compatibility, software that supports NetCDF in Zarr are encouraged to try to support data that do not declare compliance with NZ conventions but do adhere to its assumptions.
 
-The ordering is: Zarr v3 spec → NZ-1.0 → domain conventions (CF, GeoZarr, etc.).
+The ordering is: Zarr v3 spec → NZ → domain conventions (CF, GeoZarr, etc.).
 
 ## Convention Registration
 
@@ -98,7 +119,7 @@ This convention can be used with these parts of the Zarr hierarchy:
 
 ## Convention Declaration
 
-A dataset is a NZ-1.0 dataset if its root group `zarr.json` contains `"NZ-1.0"` in its `conventions` attribute:
+A dataset is an NZ dataset if its root group `zarr.json` contains `"NZ-1.0"` in its `conventions` attribute:
 
 ```json
 {
@@ -146,7 +167,7 @@ A _group_ is a node with `"node_type": "group"`. Groups may contain child groups
 
 An _array_ is a node with `"node_type": "array"`. An array has a shape, a data type, a chunk grid, a codec pipeline, a fill value, and optionally dimension names and attributes, all carried in its `zarr.json`.
 
-**\[NZ addition\]** In a NZ-1.0 dataset, every array MUST have a fully populated `dimension_names` field. The `dimension_names` array MUST have the same length as `shape`. No entry in `dimension_names` may be `null` or the empty string `""`. The Zarr v3 specification makes `dimension_names` optional; NZ requires it.
+**\[NZ addition\]** In an NZ dataset, every array MUST have a fully populated `dimension_names` field. The `dimension_names` array MUST have the same length as `shape`. No entry in `dimension_names` may be `null` or the empty string `""`. The Zarr v3 specification makes `dimension_names` optional; NZ requires it.
 
 Example of a minimal compliant array `zarr.json`:
 
@@ -215,6 +236,14 @@ Array data types are as defined in the Zarr v3 specification. The following name
 
 `bool`, `int8`, `uint8`, `int16`, `uint16`, `int32`, `uint32`, `int64`, `uint64`, `float32`, `float64`, `complex64`, `complex128`
 
+**\[NZ addition\]** Implementations of NZ MUST support the data types listed above for array `data_type` values and for the typed interpretation of `_FillValue`. These are the numeric and boolean data types defined in the [Zarr v3 specification](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html) core. An NZ dataset MUST NOT require any data type outside this set for conformance, and a conforming reader MUST be able to decode any array whose `data_type` is drawn from this set.
+
+Implementations MAY support additional data types defined in [zarr-extensions](https://github.com/zarr-developers/zarr-extensions), including but not limited to `string`, `bfloat16`, and structured types. Datasets that use extension data types remain valid NZ datasets, but readers that do not implement the relevant extension are not required to decode them.
+
+When an NZ dataset requires string-valued array data, it SHOULD use the `string` data type defined in [zarr-extensions](https://github.com/zarr-developers/zarr-extensions/tree/main/data-types/string). String values are Unicode and are encoded as UTF-8 in the underlying storage, consistent with JSON's handling of string attribute values. This requirement is scoped to array data: string-valued attributes are JSON strings and inherit JSON's UTF-8 encoding directly, with no NZ-specific constraint beyond the Zarr v3 specification.
+
+> **Note:** The `string` data type is currently a Zarr extension rather than a core type, which is why NZ states this as a SHOULD. As the extension matures and implementation support converges, a future NZ revision may promote it to a MUST for string-valued array data.
+
 ### Attribute Value Types
 
 Default type mapping from JSON attribute values to NZ types:
@@ -264,7 +293,7 @@ NZ uses standard (non-namespaced) attribute names. Only attributes that define o
 
 ### Array Structural Requirements
 
-**\[NZ addition\]** The following structural requirements apply to all arrays in a NZ-1.0 dataset:
+**\[NZ addition\]** The following structural requirements apply to all arrays in an NZ dataset:
 
 | Field                       | Location         | Requirement                                                                    |
 | --------------------------- | ---------------- | ------------------------------------------------------------------------------ |
@@ -273,7 +302,7 @@ NZ uses standard (non-namespaced) attribute names. Only attributes that define o
 
 ## Naming Rules
 
-Names of arrays, groups, and attributes in NZ-1.0 datasets:
+Names of arrays, groups, and attributes in NZ datasets:
 
 - SHOULD begin with a letter (`A`–`Z`, `a`–`z`)
 - SHOULD consist of letters, digits, and underscores
@@ -289,6 +318,34 @@ NZ RECOMMENDS the use of consolidated metadata for datasets served from object s
 
 Consolidated metadata in Zarr v3 is implemented by zarr-python and proposed for formal standardization in [zarr-specs #309](https://github.com/zarr-developers/zarr-specs/issues/309). NZ adopts the zarr-python convention pending that standardization: consolidated metadata is stored in the root group `zarr.json` under the `consolidated_metadata` key. When zarr-specs #309 is finalized, this section will be updated to cite the formal specification.
 
+## Codec Interoperability (Informative)
+
+NZ does not normatively constrain the Zarr v3 codec pipeline used by arrays in a dataset. Codec selection is an encoding concern, parallel to the role HDF5 filters play for netCDF-4: the NUG does not enumerate required HDF5 filters, and NZ does not enumerate required Zarr codecs. This section is informative. It identifies a baseline of codecs that are broadly available across Zarr v3 implementations, so producers writing NZ datasets intended for cross-implementation use have a clear default to fall back to.
+
+### Recommended Baseline
+
+The following codec configuration is RECOMMENDED for datasets intended to be readable across the widest range of Zarr v3 implementations: the `bytes` serializer (required by Zarr v3 for all numeric arrays), the `zstd` compressor, and the `sharding_indexed` codec when chunk-per-object counts would otherwise become unwieldy. This combination is the default produced by zarr-python and is implemented by zarr-js and zarrs (Rust). A dataset written with this pipeline is expected to be decodable by any conforming Zarr v3 implementation without additional codec installation.
+
+### Broadly Supported Codecs
+
+The following codecs are implemented across multiple Zarr v3 libraries and are reasonable choices for NZ datasets where the recommended baseline is not appropriate:
+
+| Codec              | Role       | Notes                                                       |
+| ------------------ | ---------- | ----------------------------------------------------------- |
+| `bytes`            | Serializer | Required for numeric arrays in Zarr v3                      |
+| `zstd`             | Compressor | Recommended default; broad support                          |
+| `gzip`             | Compressor | Universally available; lower compression ratio than zstd    |
+| `blosc`            | Compressor | Meta-compressor with multiple internal codecs               |
+| `sharding_indexed` | Chunk grid | Core Zarr v3 feature for managing chunk-per-object counts   |
+
+### Sharding
+
+Sharding is implemented as a codec (`sharding_indexed`) but is structurally part of the Zarr v3 chunk grid model. NZ treats sharding as a first-class part of the recommended baseline rather than as an optional compressor. Producers writing datasets with very large chunk counts SHOULD use sharding to keep the number of stored objects manageable, and conforming readers SHOULD support `sharding_indexed`.
+
+### Out of Scope
+
+Lossy codecs, domain-specific compressors (such as those used in geospatial imagery), and experimental codecs are out of scope for this section. Datasets using such codecs remain valid NZ datasets if they meet the structural requirements, but their cross-implementation readability is not addressed here. A future NZ revision or a downstream domain convention MAY define a profile that normatively constrains the codec pipeline for a specific community's interoperability requirements.
+
 ## What This Convention Enables (Informative)
 
 A domain convention written against NZ has access to:
@@ -301,9 +358,9 @@ A domain convention written against NZ has access to:
 
 ### NUG to NZ Mapping Table
 
-The existing CF conventions document can be applied to NZ-1.0 datasets by substituting NZ structural concepts for their NUG equivalents:
+The existing CF conventions document can be applied to NZ datasets by substituting NZ structural concepts for their NUG equivalents:
 
-| NUG concept                     | NZ-1.0 equivalent                                                |
+| NUG concept                     | NZ equivalent                                                      |
 | ------------------------------- | ------------------------------------------------------------------ |
 | netCDF file                     | Zarr v3 hierarchy                                                  |
 | dimension                       | dimension label in `dimension_names` + shared dimension constraint |
@@ -315,7 +372,7 @@ The existing CF conventions document can be applied to NZ-1.0 datasets by substi
 | `_FillValue` variable attribute | `_FillValue` array attribute                                       |
 | `Conventions` global attribute  | `conventions` root group attribute                                 |
 
-No changes to the CF conventions document are required to use CF semantics with NZ-1.0 datasets. A CF-Zarr profile document citing NZ performs the mapping above and declares compliance with both.
+No changes to the CF conventions document are required to use CF semantics with NZ datasets. A CF-Zarr profile document citing NZ performs the mapping above and declares compliance with both.
 
 ## Out of Scope (Informative)
 
@@ -343,7 +400,7 @@ The following topics are explicitly deferred to conventions built on NZ. They ar
 
 ## Normative Summary
 
-A NZ-1.0 compliant dataset:
+An NZ-1.0 compliant dataset:
 
 1. Is a valid Zarr v3 dataset.
 2. Has `"NZ-1.0"` in the `conventions` attribute of its root group `zarr.json`.
@@ -363,6 +420,7 @@ A NZ-1.0 compliant dataset:
 | Attribute type system       | JSON types only                 | JSON types; domain conventions define precision rules     |
 | `_FillValue` semantics      | Not defined                     | Defined, decoupled from `fill_value`                      |
 | Reserved attribute names    | Not defined                     | Defined in [Properties](#properties)                      |
+| Required data types | Not defined | Twelve core numeric types MUST be supported; extension types MAY be supported |
 
 ## Appendix B: Differences from the NetCDF Users Guide
 
