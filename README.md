@@ -32,7 +32,7 @@ All properties use standard attribute names (not namespaced) and are placed at t
   - [Basic array](examples/array_basic.json)
   - [Array with \_FillValue](examples/array_fillvalue.json)
   - [Root group with CF-1.12](examples/root_group_cf.json)
-  - [Dimension coordinate](examples/dimension_coordinate.json)
+  - [Dimension coordinate array](examples/dimension_coordinate.json)
 
 ## Contents
 
@@ -41,7 +41,7 @@ All properties use standard attribute names (not namespaced) and are placed at t
 - [Convention Registration](#convention-registration) — The `zarr_conventions` registry entry for NZ-1.0.
 - [Applicable To](#applicable-to) — Which Zarr hierarchy node types (Group, Array) the convention applies to.
 - [Convention Declaration](#convention-declaration) — How a dataset declares NZ compliance via the `conventions` attribute.
-- [Data Model](#data-model) — Structural concepts (store, hierarchy, node, group, array, dimension, dimension coordinate, auxiliary array, scalar array).
+- [Data Model](#data-model) — Structural concepts (store, hierarchy, node, group, array, dimension, dimension coordinate array, auxiliary array, scalar array).
 - [Type System](#type-system) — Required array data types, JSON-to-NZ attribute type mapping, and `_FillValue` semantics.
 - [Properties](#properties) — Reserved attribute names and structural requirements for root groups and arrays.
 - [Naming Rules](#naming-rules) — Allowed characters and conventions for array, group, and attribute names.
@@ -203,22 +203,22 @@ A _dimension_ is an axis of an array, identified by its position in `shape` and 
 
 **\[NZ addition\]** Dimension labels are scoped to the group containing the array. The same label used in different groups has no required relationship between groups unless a domain convention specifies otherwise.
 
-### Dimension Coordinate
+### Dimension Coordinate Array
 
-**\[NZ addition\]** A _dimension coordinate_ is an array satisfying all of the following:
+**\[NZ addition\]** A _dimension coordinate array_ is an array satisfying all of the following:
 
 - It is contained in the same group as the array whose dimension it describes
 - Its `dimension_names` contains exactly one entry
 - That entry matches the array's own name within its group
 - Its values are strictly monotonic (all distinct, either consistently increasing or consistently decreasing)
 
-Dimension coordinate identification is structural. No additional attribute is required. This reproduces the NUG coordinate variable concept in Zarr v3 terms: the identification falls out of naming, shape, and value ordering.
+Dimension coordinate array identification is structural. No additional attribute is required. This reproduces the NUG coordinate variable concept in Zarr v3 terms: the identification falls out of naming, shape, and value ordering.
 
-An array named `lat` with `"dimension_names": ["lat"]` and monotonically ordered values is a dimension coordinate for the `lat` dimension in its group. An array named `lat` with `"dimension_names": ["y", "x"]` is not, regardless of its content.
+An array named `lat` with `"dimension_names": ["lat"]` and monotonically ordered values is a dimension coordinate array for the `lat` dimension in its group. An array named `lat` with `"dimension_names": ["y", "x"]` is not, regardless of its content.
 
 ### Auxiliary Array
 
-An _auxiliary array_ is an array that provides coordinate or ancillary information for another array but does not satisfy the dimension coordinate definition above. How auxiliary arrays are associated with data arrays — including the attribute names and syntax used to declare those relationships — is left to domain conventions (e.g., the `coordinates` attribute used by CF). NZ defines the concept but does not reserve any attribute names for it.
+An _auxiliary array_ is an array that provides coordinate or ancillary information for another array but does not satisfy the dimension coordinate array definition above. How auxiliary arrays are associated with data arrays — including the attribute names and syntax used to declare those relationships — is left to domain conventions (e.g., the `coordinates` attribute used by CF). NZ defines the concept but does not reserve any attribute names for it.
 
 ### Scalar Array
 
@@ -351,7 +351,7 @@ Lossy codecs, domain-specific compressors (such as those used in geospatial imag
 A domain convention written against NZ has access to:
 
 - **Named, constrained dimensions.** The shared dimension constraint means that dimension labels within a group carry co-extent guarantees, enabling domain conventions to define co-location of arrays using the same semantics as netCDF.
-- **Dimension coordinates.** Identified structurally, without any additional attribute, exactly as coordinate variables are identified in the NUG.
+- **Dimension coordinate arrays.** Identified structurally, without any additional attribute, exactly as coordinate variables are identified in the NUG.
 - **Typed attributes.** Array data types are declared via Zarr v3 `data_type`. Attribute values use JSON types; domain conventions MAY define precision rules for specific attributes when needed.
 - **Semantic fill values.** `_FillValue` decoupled from the storage `fill_value`, preserving the NUG's masking semantics independently of Zarr's chunk initialization behavior.
 - **Auxiliary arrays.** The auxiliary array concept is defined structurally, enabling domain conventions to build their own coordinate association mechanisms (e.g., the `coordinates` attribute) on top of NZ.
@@ -365,7 +365,7 @@ The existing CF conventions document can be applied to NZ datasets by substituti
 | netCDF file                     | Zarr v3 hierarchy                                                  |
 | dimension                       | dimension label in `dimension_names` + shared dimension constraint |
 | variable                        | array                                                              |
-| coordinate variable             | dimension coordinate                                               |
+| coordinate variable             | dimension coordinate array                                         |
 | global attribute                | root group attribute                                               |
 | variable attribute              | array attribute                                                    |
 | typed attribute                 | attribute (JSON type; precision rules left to domain conventions)  |
@@ -382,7 +382,7 @@ The following topics are explicitly deferred to conventions built on NZ. They ar
 
 **Axis order.** The relationship between the order of entries in `dimension_names` and the axis order expressed in a CRS definition is an open problem with known silent failure modes. NZ does not address it.
 
-**Coordinate role identification beyond dimension coordinates.** Whether an array is a latitude coordinate, a time coordinate, or a vertical coordinate is determined by domain conventions through mechanisms such as standard names, units, and axis attributes. NZ identifies only dimension coordinates structurally; all further coordinate semantics are left to domain conventions.
+**Coordinate role identification beyond dimension coordinate arrays.** Whether an array is a latitude coordinate, a time coordinate, or a vertical coordinate is determined by domain conventions through mechanisms such as standard names, units, and axis attributes. NZ identifies only dimension coordinate arrays structurally; all further coordinate semantics are left to domain conventions.
 
 **Auxiliary coordinate association.** How auxiliary arrays are linked to data arrays (e.g., the `coordinates` attribute) is a domain convention concern. NZ defines the auxiliary array concept but does not reserve attribute names for declaring those relationships.
 
@@ -416,7 +416,7 @@ An NZ-1.0 compliant dataset:
 | --------------------------- | ------------------------------- | --------------------------------------------------------- |
 | `dimension_names`           | Optional; entries may be `null` | Required; all entries must be non-null, non-empty strings |
 | Shared dimension constraint | Not defined                     | Required within groups                                    |
-| Dimension coordinate        | Not defined                     | Defined structurally                                      |
+| Dimension coordinate array  | Not defined                     | Defined structurally                                      |
 | Attribute type system       | JSON types only                 | JSON types; domain conventions define precision rules     |
 | `_FillValue` semantics      | Not defined                     | Defined, decoupled from `fill_value`                      |
 | Reserved attribute names    | Not defined                     | Defined in [Properties](#properties)                      |
