@@ -128,7 +128,7 @@ This scoping is load-bearing. NZ does not take positions on:
 
 - Coordinate reference systems and CRS encoding (GeoZarr, CF `grid_mapping`)
 - Axis order and its relationship to CRS definitions
-- Coordinate role identification beyond dimension coordinates (latitude, time, vertical)
+- Coordinate role identification beyond dimension coordinate arrays (latitude, time, vertical)
 - Cell methods, bounds, climatological statistics
 - Discrete sampling geometries
 - Multi-scale / pyramidal structures
@@ -184,7 +184,7 @@ these substitutions; the CF spec itself is unchanged.
 | netCDF file                        | Zarr v3 hierarchy                                                              |
 | dimension                          | dimension label in `dimension_names` + shared dimension constraint             |
 | variable                           | array                                                                          |
-| coordinate variable                | dimension coordinate (1D array, `dimension_names` matches own name, monotonic) |
+| coordinate variable                | dimension coordinate array (1D array, `dimension_names` matches own name, monotonic) |
 | global attribute                   | root group attribute                                                           |
 | variable attribute                 | array attribute                                                                |
 | typed attribute (`NC_FLOAT`, etc.) | attribute (JSON type; precision rules left to domain conventions)              |
