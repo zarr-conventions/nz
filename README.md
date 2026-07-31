@@ -210,11 +210,11 @@ A _dimension_ is an axis of an array, identified by its position in `shape` and 
 - It is contained in the same group as the array whose dimension it describes
 - Its `dimension_names` contains exactly one entry
 - That entry matches the array's own name within its group
-- Its values are strictly monotonic (all distinct, either consistently increasing or consistently decreasing)
+- Its values are distinct and typically monotonic (nz does not require monatonic in support of unordered identifiers)
 
-Dimension coordinate array identification is structural. No additional attribute is required. This reproduces the NUG coordinate variable concept in Zarr v3 terms: the identification falls out of naming, shape, and value ordering.
+Dimension coordinate array identification is structural. No additional attribute is required. This reproduces the NUG coordinate variable concept in Zarr v3 terms: the identification falls out of naming and shape.
 
-An array named `lat` with `"dimension_names": ["lat"]` and monotonically ordered values is a dimension coordinate array for the `lat` dimension in its group. An array named `lat` with `"dimension_names": ["y", "x"]` is not, regardless of its content.
+For example, an array named `lat` with `"dimension_names": ["lat"]` is a dimension coordinate array for the `lat` dimension in its group. An array named `lat` with `"dimension_names": ["y", "x"]` is not, regardless of its content.
 
 ### Auxiliary Array
 
@@ -306,9 +306,14 @@ Names of arrays, groups, and attributes in NZ datasets:
 
 - SHOULD begin with a letter (`A`–`Z`, `a`–`z`)
 - SHOULD consist of letters, digits, and underscores
+- MUST NOT be zero-length
 - MUST NOT contain the path separator `/`
+- MUST NOT contain Unicode control characters
+- MUST NOT have trailing space characters
 - Are case-sensitive, but names that differ only by case SHOULD be avoided
 - MAY contain period (`.`) or hyphen (`-`), but these are discouraged in names intended to be referenced in attribute values
+
+The MUST-level constraints match those the NUG places on netCDF names (see "Names" in the [NetCDF Users Guide](https://docs.unidata.ucar.edu/nug/current/)), so that a name that is legal under NZ is also legal under the NUG. Names beginning with an underscore are reserved for system use, as in the NUG; `_FillValue` is NZ's use of that reservation.
 
 These rules ensure that NZ names can be used unambiguously in domain convention attribute values (which reference array names as strings), in CDL text representations, and in URL path components.
 
@@ -408,7 +413,7 @@ An NZ-1.0 compliant dataset:
 4. Satisfies the shared dimension constraint: within any group, all arrays sharing a dimension label have the same length along that axis.
 5. Uses `_FillValue` in array attributes (when present) as the semantic missing data indicator, distinct from the storage `fill_value`.
 6. Uses reserved attribute names only as defined in [Properties](#properties).
-7. Uses array and group names conforming to [Naming Rules](#naming-rules).
+7. Uses array, group, and attribute names satisfying the MUST-level constraints in [Naming Rules](#naming-rules).
 
 ## Appendix A: Differences from the Zarr v3 Specification
 
@@ -427,7 +432,7 @@ An NZ-1.0 compliant dataset:
 | Topic                   | NUG (netCDF)                                                       | NZ-1.0                                                                                         |
 | ----------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
 | Dimension definition    | Declared, named, and sized; shared by structural reference in file | Label in `dimension_names`; co-extent enforced by shared dimension constraint                    |
-| Coordinate variable     | 1D variable whose name matches a dimension name                    | Array whose `dimension_names` entry matches its own name and whose values are strictly monotonic |
+| Coordinate variable     | 1D variable whose name matches a dimension name                    | Array whose `dimension_names` entry matches its own name                                         |
 | Attribute type          | Declared NC type (`NC_FLOAT`, `NC_DOUBLE`, etc.)                   | JSON type; domain conventions MAY define precision rules                                         |
 | `Conventions` attribute | Root-level string, capital C                                       | `conventions` root group attribute; `Conventions` treated as equivalent during reading           |
 | Unlimited dimension     | Supported                                                          | Not defined (out of scope)                                                                       |
@@ -445,7 +450,7 @@ _No implementations yet. This convention is in the Proposal stage._
 The following tools already use patterns compatible with NZ:
 
 - **[netCDF-C (NCZarr)](https://docs.unidata.ucar.edu/netcdf-c/current/nczarr_head.html)** — C library for netCDF data access. NCZarr uses compatible dimension-naming and fill-value patterns when reading/writing Zarr.
-- **[xarray](https://github.com/pydata/xarray)** — Python library for labeled multi-dimensional arrays. Uses `dimension_names`, `_FillValue`, and `conventions` attributes when reading/writing Zarr.
+- **[xarray](https://github.com/pydata/xarray)** — Python library for labeled multi-dimensional arrays. Writes fully populated `dimension_names` on Zarr v3 and `_ARRAY_DIMENSIONS` on Zarr v2. On v3 it writes an explicit `_FillValue` attribute for masking, distinct from the storage `fill_value`, matching NZ's `_FillValue` semantics. It does not currently emit a convention declaration. See [xarray's Zarr encoding specification](https://docs.xarray.dev/en/stable/internals/zarr-encoding-spec.html).
 - **[netCDF-Java](https://github.com/Unidata/netcdf-java)** — Java library for scientific data access. Implements NUG semantics that NZ is designed to parallel.
 
 ### Datasets Using This Convention
